@@ -167,6 +167,12 @@ for iUnit = 1:length(uniqueTemplates)
     % chunk, threshold of maximum variance/range of spike missing
     % return: variance/range of spike missing
 
+    %will work if param.computeTimeChunks = 1
+    % if param.computeTimeChunks = 0 percentageSpikesMissing_gaussian will
+    % not be a vector
+    delta_percentMissing_gaussian = max(percentageSpikesMissing_gaussian) - min(percentageSpikesMissing_gaussian);
+    qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
+
     %% NEW: cut off low amplitude spikes to create consistent percentage spikes missing across time
     % new parameters: length of time chunks to define amplitude threshold,
     % (length of time chunks to fit Gaussian)

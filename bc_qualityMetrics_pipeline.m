@@ -14,10 +14,10 @@
 
 
 %% set paths - EDIT THESE 
-ephysKilosortPath = '/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/pyKS/output/';% path to your kilosort output files 
-ephysRawDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*bin'); % path to yourraw .bin or .dat data
-ephysMetaDir = dir('/home/netshare/zinu/CB016/2021-10-07/ephys/CB016_2021-10-07_NatImages_g0/CB016_2021-10-07_NatImages_g0/*.*meta'); % path to your .meta or .oebin meta file
-saveLocation = '/media/julie/ExtraHD/CB016'; % where you want to save the quality metrics 
+ephysKilosortPath = 'E:\FG005\2023-08-21\FG005_2023-08-21_g0\FG005_2023-08-21_g0_imec0\phy_curated';% path to your kilosort output files 
+ephysRawDir = dir('E:\FG005\2023-08-21\FG005_2023-08-21_g0\FG005_2023-08-21_g0_imec0\FG005_2023-08-21_g0_t0.imec0.ap.bin'); % path to yourraw .bin or .dat data
+ephysMetaDir = dir('E:\FG005\2023-08-21\FG005_2023-08-21_g0\FG005_2023-08-21_g0_imec0\FG005_2023-08-21_g0_t0.imec0.ap.meta'); % path to your .meta or .oebin meta file
+saveLocation = 'E:\FG005\2023-08-21\FG005_2023-08-21_g0\FG005_2023-08-21_g0_imec0\bombcell_new'; % where you want to save the quality metrics 
 savePath = fullfile(saveLocation, 'qMetrics'); 
 decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
 
@@ -95,4 +95,6 @@ all_good_units_number_of_spikes = qMetric.nSpikes(goodUnits);
 label_table = table(unitType);
 writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileType', 'text','Delimiter','\t');  
        
-
+%NEW - Florencia
+unitTypeDir = fullfile(savePath, 'bombcell_label.npy');
+writeNPY(unitType, unitTypeDir);
