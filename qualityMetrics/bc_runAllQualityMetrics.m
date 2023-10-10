@@ -161,6 +161,20 @@ for iUnit = 1:length(uniqueTemplates)
         percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
         param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
 
+
+    %% NEW: determine variance of percentage spikes missing across time chunks
+    % new parameters: (length of time chunk),  minimum number of spikes per
+    % chunk, threshold of maximum variance/range of spike missing
+    % return: variance/range of spike missing
+
+    %% NEW: cut off low amplitude spikes to create consistent percentage spikes missing across time
+    % new parameters: length of time chunks to define amplitude threshold,
+    % (length of time chunks to fit Gaussian)
+    % calculate: which spikes have amplitudes lower than threshold (per
+    % time chunk)
+    % return: non-accpetable (low amplitude) spike IDs
+
+
     %% re-compute percentage spikes missing and fraction contamination on timechunks
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
  
