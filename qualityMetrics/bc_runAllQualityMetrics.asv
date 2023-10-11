@@ -136,7 +136,9 @@ for iUnit = 1:length(uniqueTemplates)
 
     % get this unit's attributes 
     thisUnit = uniqueTemplates(iUnit);
-    qMetric.clusterID(iUnit) = thisUnit;
+    qMetric.phy_clusterID(iUnit) = thisUnit - 1; % this is the cluster ID as it appears in phy
+    qMetric.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
+
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
 
@@ -159,6 +161,36 @@ for iUnit = 1:length(uniqueTemplates)
         percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
         param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
 
+
+    %% NEW: determine variance of percentage spikes missing across time chunks
+    % new parameters: (length of time chunk),  minimum number of spikes per
+    % chunk, threshold of maximum variance/range of spike missing
+    % return: variance/range of spike missing
+
+    % get spikes missing per chunk
+    % (will work if param.computeTimeChunks = 1
+    % if param.computeTimeChunks = 0 percentageSpikesMissing_gaussian will
+    % not be a vector)
+    if param.computeTimeChunks == 0
+        timeChunks_amp = [min(spikeTimes_seconds):param.deltaTimeChunk: ...
+            max(spikeTimes_seconds), max(spikeTimes_seconds)];
+        % ATTENION: will overwrite results from above (not used later)
+        percentageSpikesMissing_gaussian = bc_percSpikesMissing(theseAmplis, ...
+            theseSpikeTimes, timeChunks_amp, param.plotDetails);
+    end
+
+    % calculate range of missing spikes
+    delta_percentMissing_gaussian = max(percentageSpikesMissing_gaussian) - min(percentageSpikesMissing_gaussian);
+    qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
+
+    %% NEW: cut off low amplitude spikes to create consistent percentage spikes missing across time
+    % new parameters: length of time chunks to define amplitude threshold,
+    % (length of time chunks to fit Gaussian)
+    % calculate: which spikes have amplitudes lower than threshold (per
+    % time chunk)
+    % return: non-accpetable (low amplitude) spike IDs
+
+
     %% re-compute percentage spikes missing and fraction contamination on timechunks
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
  
@@ -169,7 +201,7 @@ for iUnit = 1:length(uniqueTemplates)
 
     [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
-   
+    
     %% presence ratio (potential false negatives)
     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
@@ -182,6 +214,7 @@ for iUnit = 1:length(uniqueTemplates)
     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
 
     %% waveform
+    
     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...

@@ -1,4 +1,6 @@
-function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue, ampliBin_gaussian, spikeCountsPerAmpliBin_gaussian, gaussianFit_cutoff] = bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
+function [percentMissing_gaussian, percentMissing_symmetric, ksTest_pValue, ...
+    ampliBin_gaussian, spikeCountsPerAmpliBin_gaussian, gaussianFit_cutoff] = ...
+    bc_percSpikesMissing(theseAmplitudes, theseSpikeTimes, timeChunks, plotThis)
 % JF, Estimate the amount of spikes missing (below the detection threshold)
 % by fitting a gaussian to the amplitude distribution for each timeChunk
 % defined in timeChunks

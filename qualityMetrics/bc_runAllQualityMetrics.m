@@ -167,10 +167,22 @@ for iUnit = 1:length(uniqueTemplates)
     % chunk, threshold of maximum variance/range of spike missing
     % return: variance/range of spike missing
 
-    %will work if param.computeTimeChunks = 1
+    % TODO: only consider valid time chunks
+
+    % get spikes missing per chunk
+    % (will work if param.computeTimeChunks = 1
     % if param.computeTimeChunks = 0 percentageSpikesMissing_gaussian will
-    % not be a vector
-    delta_percentMissing_gaussian = max(percentageSpikesMissing_gaussian) - min(percentageSpikesMissing_gaussian);
+    % not be a vector)
+    if param.computeTimeChunks == 0
+        timeChunks_amp = [min(spikeTimes_seconds):param.deltaTimeChunk: ...
+            max(spikeTimes_seconds), max(spikeTimes_seconds)];
+        % ATTENION: will overwrite results from above (not used later)
+        percentageSpikesMissing_gaussian = bc_percSpikesMissing(theseAmplis, ...
+            theseSpikeTimes, timeChunks_amp, param.plotDetails);
+    end
+
+    % calculate range of missing spikes
+    delta_percentMissing_gaussian = range(percentageSpikesMissing_gaussian);
     qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
 
     %% NEW: cut off low amplitude spikes to create consistent percentage spikes missing across time
@@ -179,6 +191,10 @@ for iUnit = 1:length(uniqueTemplates)
     % calculate: which spikes have amplitudes lower than threshold (per
     % time chunk)
     % return: non-accpetable (low amplitude) spike IDs
+
+    % determine new overlapping time chunks
+
+    % 
 
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
