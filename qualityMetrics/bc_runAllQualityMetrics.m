@@ -193,8 +193,14 @@ for iUnit = 1:length(uniqueTemplates)
     % return: non-accpetable (low amplitude) spike IDs
 
     % determine new overlapping time chunks
+    chunkLimits = bc_getOverlappingTimeChunks(min(spikeTimes_seconds), max(spikeTimes_seconds))
 
-    % 
+    % for each time chunk: fit Gaussian, get cut-off in terms of STDs
+
+    % get max STD cut-off
+
+    % for each time chunk: retrieve spike IDs with amplitudes smaller than
+    % max STD cut-off
 
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks

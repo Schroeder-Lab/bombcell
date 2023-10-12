@@ -38,6 +38,11 @@ else
 end
 param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
+% defining time chunks
+param.minNumSpikesPerChunk = 50;
+param.minChunkSize = 60 * 6;
+param.maxChunkSize = 60 * 10;
+
 % amplitude parameters
 param.nRawSpikesToExtract = 100; % how many raw spikes to extract for each unit 
 param.saveMultipleRaw = 0; % If you wish to save the nRawSpikesToExtract as well, 
