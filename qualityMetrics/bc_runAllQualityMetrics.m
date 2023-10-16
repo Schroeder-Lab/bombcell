@@ -141,6 +141,9 @@ for iUnit = 1:length(uniqueTemplates)
 
     theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
     theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
+    % sort spike times in ascending order
+    [theseSpikeTimes, order] = sort(theseSpikeTimes);
+    theseAmplis = theseAmplis(order);
 
     %% remove duplicate spikes 
 
@@ -154,25 +157,13 @@ for iUnit = 1:length(uniqueTemplates)
     [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
         tauR_window, param.tauC, ...
         timeChunks, param.plotDetails, NaN);
-    
-    %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
-    [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
-        qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
-        percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
-        param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect 
-
 
     %% NEW: determine variance of percentage spikes missing across time chunks
     % new parameters: (length of time chunk),  minimum number of spikes per
     % chunk, threshold of maximum variance/range of spike missing
     % return: variance/range of spike missing
 
-    % TODO: only consider valid time chunks
-
     % get spikes missing per chunk
-    % (will work if param.computeTimeChunks = 1
-    % if param.computeTimeChunks = 0 percentageSpikesMissing_gaussian will
-    % not be a vector)
     if param.computeTimeChunks == 0
         timeChunks_amp = [min(spikeTimes_seconds):param.deltaTimeChunk: ...
             max(spikeTimes_seconds), max(spikeTimes_seconds)];
@@ -180,9 +171,11 @@ for iUnit = 1:length(uniqueTemplates)
         percentageSpikesMissing_gaussian = bc_percSpikesMissing(theseAmplis, ...
             theseSpikeTimes, timeChunks_amp, param.plotDetails);
     end
+    % find valid chunks (missing spikes < param.maxPercSpikesMissing)
+    validChunks = percentageSpikesMissing_gaussian < param.maxPercSpikesMissing;
 
     % calculate range of missing spikes
-    delta_percentMissing_gaussian = range(percentageSpikesMissing_gaussian);
+    delta_percentMissing_gaussian = range(percentageSpikesMissing_gaussian(validChunks));
     qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
 
     %% NEW: cut off low amplitude spikes to create consistent percentage spikes missing across time
@@ -193,7 +186,8 @@ for iUnit = 1:length(uniqueTemplates)
     % return: non-accpetable (low amplitude) spike IDs
 
     % determine new overlapping time chunks
-    chunkLimits = bc_getOverlappingTimeChunks(min(spikeTimes_seconds), max(spikeTimes_seconds))
+    [chunkLimits, centreLimits, invalidCh] = bc_getOverlappingTimeChunks(min(spikeTimes_seconds), ...
+        max(spikeTimes_seconds), theseSpikeTimes, params);
 
     % for each time chunk: fit Gaussian, get cut-off in terms of STDs
 
@@ -202,6 +196,12 @@ for iUnit = 1:length(uniqueTemplates)
     % for each time chunk: retrieve spike IDs with amplitudes smaller than
     % max STD cut-off
 
+
+    %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
+    [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
+        qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
+        percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
+        param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect
 
     %% re-compute percentage spikes missing and fraction contamination on timechunks
     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];

@@ -38,10 +38,13 @@ else
 end
 param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
-% defining time chunks
-param.minNumSpikesPerChunk = 50;
-param.minChunkSize = 60 * 6;
-param.maxChunkSize = 60 * 10;
+% defining time chunks for cutting off low amplitude spikes
+param.chunkCentreSize = 60 * 1; % size of non-overlapping windows, to which 
+                                % same amplitude cut-off will be applied
+param.minNumSpikesPerChunk = 50; % minimum number spikes per window used to 
+                                 % estimate Gaussian
+param.minChunkSize = 60 * 6; % minimum length of window used to estimate Gaussian
+param.maxChunkSize = 60 * 10; % maximum length of window used to estimate Gaussian
 
 % amplitude parameters
 param.nRawSpikesToExtract = 100; % how many raw spikes to extract for each unit 
