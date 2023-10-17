@@ -1,11 +1,11 @@
 function [chunkLimits, centreLimits, invalidChunks] = ...
-    bc_getOverlappingTimeChunks(start, stop, spikeTimes, params)
+    bc_getOverlappingTimeChunks(start, stop, spikeTimes, param)
 
 % parameters
-centreSize = params.chunkCentreSize;
-minSpikes = params.minNumSpikesPerChunk;
-minSize = params.minChunkSize;
-maxSize = params.maxChunkSize;
+centreSize = param.chunkCentreSize;
+minSpikes = param.minNumSpikesPerChunk;
+minSize = param.minChunkSize;
+maxSize = param.maxChunkSize;
 
 % check that there are more spikes than minSpikes
 if length(spikeTimes) < minSpikes

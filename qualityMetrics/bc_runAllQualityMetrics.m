@@ -176,8 +176,14 @@ for iUnit = 1:length(uniqueTemplates)
 
     % calculate range of missing spikes
     delta_percentMissing_gaussian = range(percentageSpikesMissing_gaussian(validChunks));
-    qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
-
+    
+    % Fixing error due to cases when there is no validChunks
+    if isempty(delta_percentMissing_gaussian)
+        qMetric.delta_percentMissing_gaussian(iUnit) = NaN;
+    else
+       qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
+    end
+    
     %% NEW: cut off low amplitude spikes to create consistent percentage spikes missing across time
     % new parameters: length of time chunks to define amplitude threshold,
     % (length of time chunks to fit Gaussian)
@@ -187,7 +193,7 @@ for iUnit = 1:length(uniqueTemplates)
 
     % determine new overlapping time chunks
     [chunkLimits, centreLimits, invalidCh] = bc_getOverlappingTimeChunks(min(spikeTimes_seconds), ...
-        max(spikeTimes_seconds), theseSpikeTimes, params);
+        max(spikeTimes_seconds), theseSpikeTimes, param);
 
     % for each time chunk: fit Gaussian, get cut-off in terms of STDs
 
