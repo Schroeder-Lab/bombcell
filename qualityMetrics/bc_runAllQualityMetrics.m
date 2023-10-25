@@ -131,7 +131,8 @@ end
 %% loop through units and get quality metrics
 fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
 
-for iUnit = 1:length(uniqueTemplates)
+lowAmpSpikes = false(size(spikeTimes_seconds));
+for iUnit = 400:450 %length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
     % get this unit's attributes 
@@ -139,10 +140,12 @@ for iUnit = 1:length(uniqueTemplates)
     qMetric.phy_clusterID(iUnit) = thisUnit - 1; % this is the cluster ID as it appears in phy
     qMetric.clusterID(iUnit) = thisUnit; % this is the cluster ID as it appears in phy, 1-indexed (adding 1)
 
-    theseSpikeTimes = spikeTimes_seconds(spikeTemplates == thisUnit);
-    theseAmplis = templateAmplitudes(spikeTemplates == thisUnit);
+    theseSpikeInds = find(spikeTemplates == thisUnit);
+    theseSpikeTimes = spikeTimes_seconds(theseSpikeInds);
+    theseAmplis = templateAmplitudes(theseSpikeInds);
     % sort spike times in ascending order
     [theseSpikeTimes, order] = sort(theseSpikeTimes);
+    theseSpikeInds = theseSpikeInds(order);
     theseAmplis = theseAmplis(order);
 
     %% remove duplicate spikes 
@@ -181,7 +184,7 @@ for iUnit = 1:length(uniqueTemplates)
     if isempty(delta_percentMissing_gaussian)
         qMetric.delta_percentMissing_gaussian(iUnit) = NaN;
     else
-       qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
+        qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
     end
     
     %% NEW: cut off low amplitude spikes to create consistent percentage spikes missing across time
@@ -192,16 +195,57 @@ for iUnit = 1:length(uniqueTemplates)
     % return: non-accpetable (low amplitude) spike IDs
 
     % determine new overlapping time chunks
-    [chunkLimits, centreLimits, invalidCh] = bc_getOverlappingTimeChunks(min(spikeTimes_seconds), ...
+    [chunkLimits, chunkCentres, invalidChunks] = bc_getOverlappingTimeChunks(min(spikeTimes_seconds), ...
         max(spikeTimes_seconds), theseSpikeTimes, param);
 
+    % concatenate consecutive valid chunks, return start and end of all
+    % valid time periods
+
     % for each time chunk: fit Gaussian, get cut-off in terms of STDs
+    valid = true(size(chunkLimits,1), 1);
+    valid(invalidChunks) = false;
+    chunkAmpMeans = NaN(size(valid));
+    chunkAmpSTDs = NaN(size(valid));
+    chunkAmpCutOffs = NaN(size(valid));
+    [chunkAmpMeans(valid), chunkAmpSTDs(valid), chunkAmpCutOffs(valid)] = ...
+        bc_fitGaussian(chunkLimits(valid,:), theseSpikeTimes, theseAmplis);
 
-    % get max STD cut-off
+    % get percentage missing spikes
+    cutOffs = normcdf(chunkAmpCutOffs, chunkAmpMeans, chunkAmpSTDs) .* 100;
 
-    % for each time chunk: retrieve spike IDs with amplitudes smaller than
-    % max STD cut-off
+    % disregard chunks with missing spikes > maxPercSpikesMissing
+    valid(cutOffs > param.maxPercSpikesMissing) = false;
 
+    if all(~valid)
+        cutSpikes = true(size(theseSpikeTimes));
+    else
+        cutSpikes = false(size(theseSpikeTimes));
+
+        % determine max cut off
+        maxCutOff = max(cutOffs(valid));
+        maxCutOff = norminv(maxCutOff/100); % in terms of STDs from mean
+
+        % for each time chunk: retrieve spike IDs with amplitudes smaller than
+        % max STD cut-off
+        cutOffs_amps = chunkAmpMeans + maxCutOff .* chunkAmpSTDs;
+        for ch = 1:length(chunkCentres)
+            ind = theseSpikeTimes >= chunkCentres(ch,1) & ...
+                theseSpikeTimes < chunkCentres(ch,2);
+            if valid(ch)
+                cutSpikes = cutSpikes | (ind & theseAmplis < cutOffs_amps(ch));
+            else
+                cutSpikes = cutSpikes | ind;
+            end
+        end
+
+        % plot old and new data (including Gaussians)
+        bc_plotLowAmpSpikes(chunkCentres, chunkLimits, theseSpikeTimes, ...
+            theseAmplis, cutSpikes, chunkAmpMeans, chunkAmpSTDs, ...
+            chunkAmpCutOffs, valid, thisUnit);
+    end
+
+    % record low amplitude spikes of this unit
+    lowAmpSpikes(theseSpikeInds(cutSpikes)) = true;
 
     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
     [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...

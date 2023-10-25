@@ -13,13 +13,9 @@
 % of the distributions of quality metrics for each unit) and GUI. 
 
 
-%% set paths - EDIT THESE 
-ephysKilosortPath = 'E:\FG005\2023-08-21\FG005_2023-08-21_g0\FG005_2023-08-21_g0_imec0\phy_curated';% path to your kilosort output files 
-ephysRawDir = dir('E:\FG005\2023-08-21\FG005_2023-08-21_g0\FG005_2023-08-21_g0_imec0\FG005_2023-08-21_g0_t0.imec0.ap.bin'); % path to yourraw .bin or .dat data
-ephysMetaDir = dir('E:\FG005\2023-08-21\FG005_2023-08-21_g0\FG005_2023-08-21_g0_imec0\FG005_2023-08-21_g0_t0.imec0.ap.meta'); % path to your .meta or .oebin meta file
-saveLocation = 'E:\FG005\2023-08-21\FG005_2023-08-21_g0\FG005_2023-08-21_g0_imec0\bombcell_new'; % where you want to save the quality metrics 
-savePath = fullfile(saveLocation, 'qMetrics'); 
-decompressDataLocal = '/media/julie/ExtraHD/decompressedData'; % where to save raw decompressed ephys data 
+%% set paths - EDIT THIS FUNCTION
+[ephysKilosortPath, ephysRawDir, ephysMetaDir, saveLocation, savePath, ...
+    decompressDataLocal] = bc_definePaths;
 
 %% load data 
 [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...

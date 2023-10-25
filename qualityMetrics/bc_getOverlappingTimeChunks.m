@@ -1,4 +1,4 @@
-function [chunkLimits, centreLimits, invalidChunks] = ...
+function [chunkLimits, chunkCentres, invalidChunks] = ...
     bc_getOverlappingTimeChunks(start, stop, spikeTimes, param)
 
 % parameters
@@ -9,15 +9,17 @@ maxSize = param.maxChunkSize;
 
 % check that there are more spikes than minSpikes
 if length(spikeTimes) < minSpikes
-    centreLimits = NaN;
-    chunkLimits = NaN;
+    chunkCentres = [start stop];
+    chunkLimits = [start stop];
+    invalidChunks = true;
     return
 end
 
 % define non-overlapping chunk centres
-centreLimits = (start : centreSize : stop)';
-centreLimits = [centreLimits(1:end-1) centreLimits(2:end)];
-centreTimes = centreLimits(:,1) + centreSize/2;
+centreSize = (stop - start) / round((stop - start) / centreSize);
+chunkCentres = (start : centreSize : stop)';
+chunkCentres = [chunkCentres(1:end-1) chunkCentres(2:end)];
+centreTimes = chunkCentres(:,1) + centreSize/2;
 
 % find chunk for each non-overlapping centre with enough spikes and within
 % min and max length
@@ -32,6 +34,9 @@ end
 tooSmall = find(numSpikes < minSpikes);
 for ch = 1:length(tooSmall)
     sp = find(spikeTimes > centreTimes(tooSmall(ch)), 1);
+    if isempty(sp)
+        sp = length(spikeTimes);
+    end
     sp_start = sp - ceil(minSpikes/2);
     sp_stop = sp_start + minSpikes - 1;
     if sp_start < 1
@@ -44,6 +49,9 @@ for ch = 1:length(tooSmall)
     end
     chunkLimits(tooSmall(ch),:) = [spikeTimes(sp_start) spikeTimes(sp_stop)+0.01];
 end
-% 4. check whether new sizes of chunks are larger maxSize
+% 4. check whether new sizes of chunks are larger maxSize or outside of
+% chunkCentres
 sizes = diff(chunkLimits, 1, 2);
 invalidChunks = find(sizes > maxSize);
+invalidChunks = unique([invalidChunks; find(chunkLimits(:,1) > chunkCentres(:,2) | ...
+    chunkLimits(:,2) < chunkCentres(:,1))]);
