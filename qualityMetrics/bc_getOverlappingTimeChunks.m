@@ -1,11 +1,19 @@
 function [chunkLimits, chunkCentres, invalidChunks] = ...
-    bc_getOverlappingTimeChunks(start, stop, spikeTimes, param)
+    bc_getOverlappingTimeChunks(start, stop, spikeTimes, amplitudes, param)
+
+% TODO: introduce non-overlapping periods if spike amplitudes vary too fast
+% 1. get smoothed time-dependent spike amplitude measure
+% 2. take 1st derivative
+% 3. introduce period borders if derivative crosses threshold
+% 4. get overlapping chunks within each period
+
 
 % parameters
 centreSize = param.chunkCentreSize;
 minSpikes = param.minNumSpikesPerChunk;
 minSize = param.minChunkSize;
 maxSize = param.maxChunkSize;
+thresh = param.maxAmpChange;
 
 % check that there are more spikes than minSpikes
 if length(spikeTimes) < minSpikes
@@ -14,6 +22,13 @@ if length(spikeTimes) < minSpikes
     invalidChunks = true;
     return
 end
+
+% cut into periods of relatively stable spike amplitudes
+timeStep = 10; %in sec
+ampContinuous = medfilt1(amplitudes,21);
+time = floor(spikeTimes(1)) : timeStep : ceil(spikeTimes(end));
+ampContinuous = interp1(spikeTimes, ampContinuous, time);
+ampDeriv = diff(ampContinuous);
 
 % define non-overlapping chunk centres
 centreSize = (stop - start) / round((stop - start) / centreSize);

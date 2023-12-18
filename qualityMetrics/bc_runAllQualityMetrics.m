@@ -132,7 +132,7 @@ end
 fprintf('\n Extracting quality metrics from %s ... ', param.rawFile)
 
 lowAmpSpikes = false(size(spikeTimes_seconds));
-for iUnit = 400:450 %length(uniqueTemplates)
+for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
     % get this unit's attributes 
@@ -196,7 +196,7 @@ for iUnit = 400:450 %length(uniqueTemplates)
 
     % determine new overlapping time chunks
     [chunkLimits, chunkCentres, invalidChunks] = bc_getOverlappingTimeChunks(min(spikeTimes_seconds), ...
-        max(spikeTimes_seconds), theseSpikeTimes, param);
+        max(spikeTimes_seconds), theseSpikeTimes, theseAmplis, param);
 
     % concatenate consecutive valid chunks, return start and end of all
     % valid time periods
