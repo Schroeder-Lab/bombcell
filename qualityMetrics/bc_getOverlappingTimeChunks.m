@@ -7,6 +7,26 @@ function [chunkLimits, chunkCentres, invalidChunks] = ...
 % 3. introduce period borders if derivative crosses threshold
 % 4. get overlapping chunks within each period
 
+% Alternative
+% 1. Estimate STD from amplitudes minus median filtered amplitudes
+%    (possibly variable across time, but take care if amplitudes below detection threshold)
+% 2. Divide these corrected amplitudes by STD
+
+% 2. Subtract (param.maxPercSpikeMissing) * STD from median-filtered
+% amplitudes -> time below 0 are invalid
+
+% 2. Use median filtered amplitudes to detect times when STD is cut-off too
+% much -> disregard
+% 3. Use valid median filtered amplitudes to detect minimum -> use this
+% point to cut off small spike amplitudes everywhere
+
+% Or:
+% Iterative process:
+% caculate chunks and means as implemented
+% subtract means and check how much median filtered amplitudes change
+% if change is larger than 2 STD (median corrected amplitudes), then divide
+% those chunks into smaller chunks
+
 
 % parameters
 centreSize = param.chunkCentreSize;
@@ -23,12 +43,13 @@ if length(spikeTimes) < minSpikes
     return
 end
 
-% cut into periods of relatively stable spike amplitudes
-timeStep = 10; %in sec
-ampContinuous = medfilt1(amplitudes,21);
-time = floor(spikeTimes(1)) : timeStep : ceil(spikeTimes(end));
-ampContinuous = interp1(spikeTimes, ampContinuous, time);
-ampDeriv = diff(ampContinuous);
+% estimate STD of straightened data
+timeStep = 0.2; %in sec
+spikeRate = length(spikeTimes) / (stop - start);
+ampFilt = medfilt1(amplitudes, max(21, round(spikeRate * timeStep) * 4 + 1));
+ampStraight = amplitudes - ampFilt;
+ampSTD = std(ampStraight);
+ampThr = ampSTD * thresh;
 
 % define non-overlapping chunk centres
 centreSize = (stop - start) / round((stop - start) / centreSize);
@@ -43,7 +64,7 @@ chunkLimits = centreTimes + [-minSize minSize]./2;
 % 2. find chunks with fewer spikes than minSpikes
 numSpikes = NaN(size(chunkLimits,1), 1);
 for ch = 1:size(chunkLimits,1)
-    numSpikes(ch) = sum(spikeTimes >=chunkLimits(ch,1) & spikeTimes < chunkLimits(ch,2));
+    numSpikes(ch) = sum(spikeTimes >= chunkLimits(ch,1) & spikeTimes < chunkLimits(ch,2));
 end
 % 3. extend chunks to have at least minSpikes
 tooSmall = find(numSpikes < minSpikes);
@@ -70,3 +91,13 @@ sizes = diff(chunkLimits, 1, 2);
 invalidChunks = find(sizes > maxSize);
 invalidChunks = unique([invalidChunks; find(chunkLimits(:,1) > chunkCentres(:,2) | ...
     chunkLimits(:,2) < chunkCentres(:,1))]);
+% 5. check whether amplitudes in chunks show too much variability
+ampRanges = NaN(size(chunkLimits,1), 1);
+for ch = 1:size(chunkLimits,1)
+    if ismember(ch, invalidChunks)
+        continue
+    end
+    ind = spikeTimes >= chunkLimits(ch,1) & spikeTimes < chunkLimits(ch,2);
+    ampRanges(ch) = range(ampFilt(ind));
+end
+invalidChunks = unique([invalidChunks; find(ampRanges > ampThr)]);

@@ -32,10 +32,11 @@ fits(~valid,:) = NaN;
 mini = min([hists(:); fits(:)]);
 maxi = max([hists(:); fits(:)]);
 
-figure('WindowState', 'fullscreen')
+figure('WindowState', 'maximized')
 tiledlayout(2,1)
+ax = zeros(1,2);
 
-nexttile
+ax(1) = nexttile;
 hold on
 imagesc(mean(chunkCentres([1 end],:),2), binCentres([1 end]), hists', [mini maxi])
 h = scatter(spikeTimes, amplitudes, 4, 'white', 'filled');
@@ -46,13 +47,14 @@ ylim(binEdges([1 end]))
 colorbar
 title('Histograms')
 
-nexttile
+ax(2) = nexttile;
 hold on
 imagesc(mean(chunkCentres([1 end],:),2), binCentres([1 end]), fits', [mini maxi])
 h1 = errorbar(mean(chunkCentres,2), means, STDs, 'ro-', ...
     'MarkerFaceColor', 'r', 'LineWidth', 2, 'CapSize', 0);
-h2 = scatter(spikeTimes(~cutSpikes), amplitudes(~cutSpikes), 4, 'white', 'filled');
-alpha(h2, 0.3)
+h2 = plot(mean(chunkCentres(~valid,:),2), means(~valid), 'wx', 'LineWidth', 2);
+h3 = scatter(spikeTimes(~cutSpikes), amplitudes(~cutSpikes), 4, 'white', 'filled');
+alpha(h3, 0.3)
 xlim(chunkCentres([1 end]))
 ylim(binEdges([1 end]))
 set(gca, 'YDir', 'normal')
@@ -60,6 +62,7 @@ colorbar
 title('Fitted Gaussians')
 xlabel('Time (s)')
 ylabel('Amplitude')
-legend(h1, 'Fitted means')
+legend([h1 h2], 'Fitted means', 'Invalid')
 
 sgtitle(sprintf('Unit %d', thisUnit))
+linkaxes(ax, 'x')

@@ -41,11 +41,11 @@ param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GU
 % defining time chunks for cutting off low amplitude spikes
 param.maxAmpChange = 3; % threshold (in STDs) of change in spike amplitude across time;
                         % if crossed, separate chunks used to fit Gaussians
-param.chunkCentreSize = 60 * 1; % size of non-overlapping windows, to which 
+param.chunkCentreSize = 10; % size of non-overlapping windows, to which 
                                 % same amplitude cut-off will be applied
 param.minNumSpikesPerChunk = 50; % minimum number spikes per window used to 
                                  % estimate Gaussian
-param.minChunkSize = 60 * 6; % minimum length of window used to estimate Gaussian
+param.minChunkSize = 20; % minimum length of window used to estimate Gaussian
 param.maxChunkSize = 60 * 10; % maximum length of window used to estimate Gaussian
 
 % amplitude parameters
