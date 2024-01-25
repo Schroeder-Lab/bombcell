@@ -17,6 +17,16 @@
 [ephysKilosortPath, ephysRawDir, ephysMetaDir, saveLocation, savePath, ...
     decompressDataLocal] = bc_definePaths;
 
+%% check MATLAB version 
+if exist('isMATLABReleaseOlderThan', 'file') == 0 % function introduced in MATLAB 2020b.
+    oldMATLAB = true;
+else
+    oldMATLAB = isMATLABReleaseOlderThan("R2019a");
+end
+if oldMATLAB
+    error('This MATLAB version is older than 2019a - download a more recent version before continuing')
+end
+
 %% load data 
 [spikeTimes_samples, spikeTemplates, templateWaveforms, templateAmplitudes, pcFeatures, ...
     pcFeatureIdx, channelPositions] = bc_loadEphysData(ephysKilosortPath);
@@ -25,8 +35,8 @@
 rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
-param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath); 
-% param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile) % Run this if you want to use UnitMatch after
+param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV); %for unitmatch, run this:
+% param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 
 %% compute quality metrics 
 rerun = 0;
@@ -34,10 +44,10 @@ qMetricsExist = ~isempty(dir(fullfile(savePath, 'qMetric*.mat'))) || ~isempty(di
 
 if qMetricsExist == 0 || rerun
     [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
-        templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
+        templateWaveforms, templateAmplitudes, pcFeatures, pcFeatureIdx, channelPositions, savePath);
 else
     [param, qMetric] = bc_loadSavedMetrics(savePath); 
-    unitType = bc_getQualityUnitType(param, qMetric);
+    unitType = bc_getQualityUnitType(param, qMetric, savePath);
 end
 
 %% view units + quality metrics in GUI 
@@ -52,6 +62,9 @@ bc_loadMetricsForGUI;
 % n : go to next noise unit
 % up/down arrow: toggle between time chunks in the raw data
 % u: brings up a input dialog to enter the unit you want to go to
+
+% currently this GUI works best with a screen in portrait mode - we are
+% working to get it to handle screens in landscape mode better. 
 unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, loadRawTraces);
 
@@ -79,9 +92,9 @@ number_of_spikes_for_this_cluster = qMetric.nSpikes(qMetric.phy_clusterID == ori
 
 
 %% example: get unit labels 
-% the output of `uunitType = bc_getQualityUnitType(param, qMetric);` gives
-% the unitType in a number format. 1 inidicates good units, 2 inidicates mua units, 3
-% indicates non-somatic units and 0 indicates noise units (see below) 
+% the output of `unitType = bc_getQualityUnitType(param, qMetric);` gives
+% the unitType in a number format. 1 indicates good units, 2 indicates mua units, 3
+% indicates non-somatic units and 0 indciates noise units (see below) 
  
 goodUnits = unitType == 1;
 muaUnits = unitType == 2;
@@ -97,4 +110,12 @@ writetable(label_table,[savePath filesep 'templates._bc_unit_labels.tsv'],'FileT
        
 %NEW - Florencia
 unitTypeDir = fullfile(savePath, 'bombcell_label.npy');
-writeNPY(unitType, unitTypeDir);
+writeNPY(unitType, unitTypeDir);      
+
+%% optional: additionally compute ephys properties for each unit and classify cell types 
+rerunEP = 0;
+region = ''; % options include 'Striatum' and 'Cortex'
+[ephysProperties, unitClassif] = bc_ephysPropertiesPipeline(ephysKilosortPath, savePath, rerunEP, region);
+
+% example: get good MSN units 
+goodMSNs = strcmp(unitClassif, 'MSN') & unitType == 1;

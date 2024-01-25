@@ -32,11 +32,15 @@ if param.plotGlobal
     %% plot summary of waveforms classified as noise/mua/good
     % 1. single/multi/noise/axonal waveforms
     figure('Color', 'w');
-
-    unitTypeString = {'Noise', 'Single', 'Multi', 'Non-somatic'};
+    
+    if param.splitGoodAndMua_NonSomatic == 0
+        unitTypeString = {'Noise', 'Good', 'MUA', 'Non-somatic'};
+    else
+        unitTypeString = {'Noise', 'Somatic Good', 'Somatic MUA', 'Non-somatic Good', 'Non-somatic MUA'};
+    end
     uniqueTemplates_idx = 1:size(uniqueTemplates, 1);
-    for iUnitType = 0:3
-        subplot(2, 2, iUnitType+1)
+    for iUnitType = 0:length(unitTypeString)-1
+        subplot(2, ceil(length(unitTypeString)/2), iUnitType+1)
         title([unitTypeString{iUnitType+1}, ' unit template waveforms']);
         hold on;
         singleU = uniqueTemplates_idx(find(unitType == iUnitType));
@@ -278,9 +282,8 @@ if param.plotGlobal
         warning('could not plot global plots')
     end
     if exist('prettify_plot', 'file')
-        prettify_plot('none', 'none', 'w')
+        prettify_plot('FigureColor', 'w')
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
-        %    makepretty('w')
     end
 end

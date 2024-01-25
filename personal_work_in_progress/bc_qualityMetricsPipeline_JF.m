@@ -30,7 +30,10 @@ else
 
 end
 %% run qmetrics 
-param = bc_qualityParamValues(ephysMetaDir, rawFile); 
+param = bc_qualityParamValues_JF(ephysMetaDir, rawFile, '', ''); 
+if ~decompress
+    param.extractRaw = 0;
+end
 %param.computeDistanceMetrics = 1;
 
 %% compute quality metrics 
@@ -50,7 +53,7 @@ if(runQM && isempty(qMetricsExist)) || rerunQM
         [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
             templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
     catch
-        param = bc_qualityParamValues_noRaw(ephysMetaDir, rawFile); 
+        param = bc_qualityParamValues_noRaw(ephysMetaDir, rawFile, '', ''); 
         [qMetric, unitType] = bc_runAllQualityMetrics(param, spikeTimes_samples, spikeTemplates, ...
             templateWaveforms, templateAmplitudes,pcFeatures,pcFeatureIdx,channelPositions, savePath);
     end

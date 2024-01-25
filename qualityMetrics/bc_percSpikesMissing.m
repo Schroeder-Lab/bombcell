@@ -126,10 +126,10 @@ for iTimeChunk = 1:numel(timeChunks) - 1
             if iTimeChunk > 1
                 set(gca,'Yticklabel',[]) 
             end
-            if iTimeChunk == numel(timeChunks) - 1
-                legend({[ roundedP, '% missing spikes']}, 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none')
+            if iTimeChunk == 1
+                title({['% missing spikes: ', newline, roundedP]}, 'Color', [0.7, 0.7, 0.7])
             else
-                legend([roundedP, '% missing spikes'], 'Location', 'NorthEast', 'TextColor', [0.7, 0.7, 0.7], 'Color', 'none');
+                title(roundedP, 'Color', [0.7, 0.7, 0.7]);
             end
 
         end
@@ -141,7 +141,7 @@ end
 
 if plotThis 
     if exist('prettify_plot', 'file')
-        prettify_plot('none','all','none')
+        prettify_plot('FigureColor', 'w', 'XLimits', 'keep', 'YLimits', 'all')
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
         makepretty('none')
@@ -159,7 +159,7 @@ if plotThis
     xlabel('time (s)')
     ylabel(['amplitude scaling', newline, 'factor'])
     if exist('prettify_plot', 'file')
-        prettify_plot('none','none','none')
+        prettify_plot('FigureColor', 'w', 'XLimits', 'keep', 'YLimits', 'keep', 'TickLength', 0.01)
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
         makepretty('none')
