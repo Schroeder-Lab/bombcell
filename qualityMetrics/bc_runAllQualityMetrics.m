@@ -131,8 +131,7 @@ end
 %% loop through units and get quality metrics
 fprintf('\nExtracting quality metrics from %s ... \n', param.rawFile)
 
-lowAmpSpikes = false(size(spikeTimes_seconds));
-for iUnit = 11:20 %1:length(uniqueTemplates)
+for iUnit = 1:length(uniqueTemplates)
     clearvars thisUnit theseSpikeTimes theseAmplis theseSpikeTemplates
 
     % get this unit's attributes 
@@ -143,168 +142,77 @@ for iUnit = 11:20 %1:length(uniqueTemplates)
     theseSpikeInds = find(spikeTemplates == thisUnit);
     theseSpikeTimes = spikeTimes_seconds(theseSpikeInds);
     theseAmplis = templateAmplitudes(theseSpikeInds);
-    % sort spike times in ascending order
-    [theseSpikeTimes, order] = sort(theseSpikeTimes);
-    theseSpikeInds = theseSpikeInds(order);
-    theseAmplis = theseAmplis(order);
 
     %% remove duplicate spikes 
 
 
-%     %% percentage spikes missing (false negatives)
-%     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
-%         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
-% 
-%     %% fraction contamination (false positives)
-%     tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
-%     [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-%         tauR_window, param.tauC, ...
-%         timeChunks, param.plotDetails, NaN);
-% 
-%     %% NEW: determine variance of percentage spikes missing across time chunks
-%     % new parameters: (length of time chunk),  minimum number of spikes per
-%     % chunk, threshold of maximum variance/range of spike missing
-%     % return: variance/range of spike missing
-% 
-%     % get spikes missing per chunk
-%     if param.computeTimeChunks == 0
-%         timeChunks_amp = [min(spikeTimes_seconds):param.deltaTimeChunk: ...
-%             max(spikeTimes_seconds), max(spikeTimes_seconds)];
-%         % ATTENION: will overwrite results from above (not used later)
-%         percentageSpikesMissing_gaussian = bc_percSpikesMissing(theseAmplis, ...
-%             theseSpikeTimes, timeChunks_amp, param.plotDetails);
-%     end
-%     % find valid chunks (missing spikes < param.maxPercSpikesMissing)
-%     validChunks = percentageSpikesMissing_gaussian < param.maxPercSpikesMissing;
-% 
-%     % calculate range of missing spikes
-%     delta_percentMissing_gaussian = range(percentageSpikesMissing_gaussian(validChunks));
-%     
-%     % Fixing error due to cases when there is no validChunks
-%     if isempty(delta_percentMissing_gaussian)
-%         qMetric.delta_percentMissing_gaussian(iUnit) = NaN;
-%     else
-%         qMetric.delta_percentMissing_gaussian(iUnit) = delta_percentMissing_gaussian;
-%     end
-    
-    %% NEW: cut off low amplitude spikes to create consistent percentage spikes missing across time
-    % new parameters: length of time chunks to define amplitude threshold,
-    % (length of time chunks to fit Gaussian)
-    % calculate: which spikes have amplitudes lower than threshold (per
-    % time chunk)
-    % return: non-accpetable (low amplitude) spike IDs
+    %% percentage spikes missing (false negatives)
+    [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
+        bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
 
-    % determine new overlapping time chunks
-    [chunkLimits, chunkCentres, invalidChunks] = ...
-        bc_getOverlappingTimeChunks(min(spikeTimes_seconds), ...
-        max(spikeTimes_seconds), theseSpikeTimes, theseAmplis, param);
+    %% fraction contamination (false positives)
+    tauR_window = param.tauR_valuesMin:param.tauR_valuesStep:param.tauR_valuesMax;
+    [fractionRPVs, ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
+        tauR_window, param.tauC, ...
+        timeChunks, param.plotDetails, NaN);
 
-    % concatenate consecutive valid chunks, return start and end of all
-    % valid time periods
+    %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
+    [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
+        qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
+        percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
+        param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect
 
-    % for each time chunk: fit Gaussian, get cut-off in terms of STDs
-    valid = true(size(chunkLimits,1), 1);
-    valid(invalidChunks) = false;
-    chunkAmpMeans = NaN(size(valid));
-    chunkAmpSTDs = NaN(size(valid));
-    chunkAmpCutOffs = NaN(size(valid));
-    [chunkAmpMeans(valid), chunkAmpSTDs(valid), chunkAmpCutOffs(valid)] = ...
-        bc_fitGaussian(chunkLimits(valid,:), theseSpikeTimes, theseAmplis);
+    %% re-compute percentage spikes missing and fraction contamination on timechunks
+    thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
 
-    % get percentage missing spikes
-    cutOffs = normcdf(chunkAmpCutOffs, chunkAmpMeans, chunkAmpSTDs) .* 100;
+    [qMetric.percentageSpikesMissing_gaussian(iUnit), qMetric.percentageSpikesMissing_symmetric(iUnit), ...
+        qMetric.ksTest_pValue(iUnit), forGUI.ampliBinCenters{iUnit}, forGUI.ampliBinCounts{iUnit}, ...
+        forGUI.ampliGaussianFit{iUnit}] = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, ...
+        thisUnits_timesToUse, param.plotDetails);
 
-    % disregard chunks with missing spikes > maxPercSpikesMissing
-    valid(cutOffs > param.maxPercSpikesMissing) = false;
+    [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
+        tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
 
-    if all(~valid)
-        cutSpikes = true(size(theseSpikeTimes));
+    %% presence ratio (potential false negatives)
+    [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
+        qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
+
+    %% maximum cumulative drift estimate
+    [qMetric.maxDriftEstimate(iUnit),qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
+        theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.computeDrift, param.plotDetails);
+
+    %% number spikes
+    qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
+
+    %% waveform
+
+    waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
+    [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
+        forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
+        forGUI.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ....
+        forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
+        param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow,...
+        param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
+
+    %% amplitude
+    if param.extractRaw
+        qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
+            param.ephysMetaFile);
     else
-        cutSpikes = false(size(theseSpikeTimes));
-
-        % determine max cut off
-        maxCutOff = max(cutOffs(valid));
-        maxCutOff = norminv(maxCutOff/100); % in terms of STDs from mean
-
-        % for each time chunk: retrieve spike IDs with amplitudes smaller than
-        % max STD cut-off
-        cutOffs_amps = chunkAmpMeans + maxCutOff .* chunkAmpSTDs;
-        for ch = 1:length(chunkCentres)
-            ind = theseSpikeTimes >= chunkCentres(ch,1) & ...
-                theseSpikeTimes < chunkCentres(ch,2);
-            if valid(ch)
-                cutSpikes = cutSpikes | (ind & theseAmplis < cutOffs_amps(ch));
-            else
-                cutSpikes = cutSpikes | ind;
-            end
-        end
-
-        % plot old and new data (including Gaussians)
-        bc_plotLowAmpSpikes(chunkCentres, chunkLimits, theseSpikeTimes, ...
-            theseAmplis, cutSpikes, chunkAmpMeans, chunkAmpSTDs, ...
-            chunkAmpCutOffs, valid, thisUnit);
+         qMetric.rawAmplitude(iUnit) =NaN;
+         qMetric.signalToNoiseRatio(iUnit) = NaN;
     end
 
-    % record low amplitude spikes of this unit
-    lowAmpSpikes(theseSpikeInds(cutSpikes)) = true;
-
-%     %% define timechunks to keep: keep times with low percentage spikes missing and low fraction contamination
-%     [theseSpikeTimes, theseAmplis, theseSpikeTemplates, qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit),...
-%         qMetric.RPV_tauR_estimate(iUnit)] = bc_defineTimechunksToKeep(...
-%         percentageSpikesMissing_gaussian, fractionRPVs, param.maxPercSpikesMissing, ...
-%         param.maxRPVviolations, theseAmplis, theseSpikeTimes, spikeTemplates, timeChunks); %QQ add kstest thing, symmetric ect
-% 
-%     %% re-compute percentage spikes missing and fraction contamination on timechunks
-%     thisUnits_timesToUse = [qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit)];
-%  
-%     [qMetric.percentageSpikesMissing_gaussian(iUnit), qMetric.percentageSpikesMissing_symmetric(iUnit), ...
-%         qMetric.ksTest_pValue(iUnit), forGUI.ampliBinCenters{iUnit}, forGUI.ampliBinCounts{iUnit}, ...
-%         forGUI.ampliGaussianFit{iUnit}] = bc_percSpikesMissing(theseAmplis, theseSpikeTimes, ...
-%         thisUnits_timesToUse, param.plotDetails);
-% 
-%     [qMetric.fractionRPVs(iUnit,:), ~, ~] = bc_fractionRPviolations(theseSpikeTimes, theseAmplis, ...
-%         tauR_window, param.tauC, thisUnits_timesToUse, param.plotDetails, qMetric.RPV_tauR_estimate(iUnit));
-%     
-%     %% presence ratio (potential false negatives)
-%     [qMetric.presenceRatio(iUnit)] = bc_presenceRatio(theseSpikeTimes, theseAmplis, param.presenceRatioBinSize, ...
-%         qMetric.useTheseTimesStart(iUnit), qMetric.useTheseTimesStop(iUnit), param.plotDetails);
-% 
-%     %% maximum cumulative drift estimate
-%     [qMetric.maxDriftEstimate(iUnit),qMetric.cumDriftEstimate(iUnit)] = bc_maxDriftEstimate(pcFeatures, pcFeatureIdx, theseSpikeTemplates, ...
-%         theseSpikeTimes, channelPositions(:,2), thisUnit, param.driftBinSize, param.computeDrift, param.plotDetails);
-%     
-%     %% number spikes
-%     qMetric.nSpikes(iUnit) = bc_numberSpikes(theseSpikeTimes);
-% 
-%     %% waveform
-%     
-%     waveformBaselineWindow = [param.waveformBaselineWindowStart, param.waveformBaselineWindowStop];
-%     [qMetric.nPeaks(iUnit), qMetric.nTroughs(iUnit), qMetric.isSomatic(iUnit), forGUI.peakLocs{iUnit},...
-%         forGUI.troughLocs{iUnit}, qMetric.waveformDuration_peakTrough(iUnit), ...
-%         forGUI.spatialDecayPoints(iUnit,:), qMetric.spatialDecaySlope(iUnit), qMetric.waveformBaselineFlatness(iUnit), ....
-%         forGUI.tempWv(iUnit,:)] = bc_waveformShape(templateWaveforms,thisUnit, qMetric.maxChannels(thisUnit),...
-%         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow,...
-%         param.minThreshDetectPeaksTroughs, param.plotDetails); %do we need tempWv ? 
-%      
-%     %% amplitude
-%     if param.extractRaw
-%         qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit,rawWaveformsPeakChan(iUnit),:), ...
-%             param.ephysMetaFile);
-%     else
-%          qMetric.rawAmplitude(iUnit) =NaN;
-%          qMetric.signalToNoiseRatio(iUnit) = NaN;
-%     end
-% 
-%     %% distance metrics
-%     if param.computeDistanceMetrics
-%         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
-%             forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
-%             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
-%             param.nChannelsIsoDist, param.plotDetails); %QQ
-%     end
-%     if ((mod(iUnit, 50) == 0) || iUnit == length(uniqueTemplates)) && param.verbose
-%        fprintf(['\n   Finished ', num2str(iUnit), ' / ', num2str(length(uniqueTemplates)), ' units.']);
-%     end
+    %% distance metrics
+    if param.computeDistanceMetrics
+        [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
+            forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
+            pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
+            param.nChannelsIsoDist, param.plotDetails); %QQ
+    end
+    if ((mod(iUnit, 50) == 0) || iUnit == length(uniqueTemplates)) && param.verbose
+       fprintf(['\n   Finished ', num2str(iUnit), ' / ', num2str(length(uniqueTemplates)), ' units.']);
+    end
 
 end
 

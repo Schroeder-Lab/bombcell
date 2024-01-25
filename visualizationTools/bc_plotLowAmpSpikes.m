@@ -1,5 +1,6 @@
 function bc_plotLowAmpSpikes(chunkCentres, chunkLimits, spikeTimes, ...
-    amplitudes, cutSpikes, means, STDs, thresholds, valid, thisUnit)
+    amplitudes, ampFilt, ampRanges, ampMins, ampThr, cutSpikes, means, STDs, thresholds, ...
+    valid, thisUnit)
 
 nBins = 20;
 [~, binEdges] = histcounts(amplitudes, nBins);
@@ -31,6 +32,7 @@ fits(~valid,:) = NaN;
 
 mini = min([hists(:); fits(:)]);
 maxi = max([hists(:); fits(:)]);
+t = mean(chunkCentres,2);
 
 figure('WindowState', 'maximized')
 tiledlayout(2,1)
@@ -38,31 +40,40 @@ ax = zeros(1,2);
 
 ax(1) = nexttile;
 hold on
-imagesc(mean(chunkCentres([1 end],:),2), binCentres([1 end]), hists', [mini maxi])
+imagesc(t, binCentres([1 end]), hists', [mini maxi])
 h = scatter(spikeTimes, amplitudes, 4, 'white', 'filled');
-alpha(h, 0.3)
+alpha(h, 0.7)
 set(gca, 'YDir', 'normal')
 xlim(chunkCentres([1 end]))
 ylim(binEdges([1 end]))
-colorbar
+c = colorbar;
+c.Label.String = 'Measured frequency';
 title('Histograms')
 
 ax(2) = nexttile;
 hold on
-imagesc(mean(chunkCentres([1 end],:),2), binCentres([1 end]), fits', [mini maxi])
-h1 = errorbar(mean(chunkCentres,2), means, STDs, 'ro-', ...
+imagesc(t, binCentres([1 end]), fits', [mini maxi])
+h1 = errorbar(t, means, STDs, 'ro-', ...
     'MarkerFaceColor', 'r', 'LineWidth', 2, 'CapSize', 0);
 h2 = plot(mean(chunkCentres(~valid,:),2), means(~valid), 'wx', 'LineWidth', 2);
 h3 = scatter(spikeTimes(~cutSpikes), amplitudes(~cutSpikes), 4, 'white', 'filled');
+h4 = plot(spikeTimes, ampFilt, 'w', 'LineWidth', 0.5);
+h5 = plot(t, ampMins, 'w', 'LineWidth', 2);
+     plot(t, ampMins + ampRanges, 'w', 'LineWidth', 2);
+h6 = plot(t, ampMins + ampThr, 'w-.', 'LineWidth', 1);
 alpha(h3, 0.3)
 xlim(chunkCentres([1 end]))
 ylim(binEdges([1 end]))
 set(gca, 'YDir', 'normal')
-colorbar
+c = colorbar;
+c.Label.String = 'Fitted frequency';
 title('Fitted Gaussians')
 xlabel('Time (s)')
 ylabel('Amplitude')
-legend([h1 h2], 'Fitted means', 'Invalid')
+l = legend([h1 h2 h4 h5 h6], 'Gaussian', 'Cut off', 'Median', 'Range', 'Threshold');
+l.Color = 'none';
+l.TextColor = 'w';
+l.Box = 'off';
 
 sgtitle(sprintf('Unit %d', thisUnit))
 linkaxes(ax, 'x')

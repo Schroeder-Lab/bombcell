@@ -1,4 +1,5 @@
-function [chunkLimits, chunkCentres, invalidChunks] = ...
+function [chunkLimits, chunkCentres, invalidChunks, ampFilt, ampRanges, ...
+    ampMins, ampThr] = ...
     bc_getOverlappingTimeChunks(start, stop, spikeTimes, amplitudes, param)
 
 % TODO: introduce non-overlapping periods if spike amplitudes vary too fast
@@ -61,7 +62,7 @@ centreTimes = chunkCentres(:,1) + centreSize/2;
 % min and max length
 % 1. start by setting chunk size to min size
 chunkLimits = centreTimes + [-minSize minSize]./2;
-% 2. find chunks with fewer spikes than minSpikes
+% 2. find number of spikes per chunk
 numSpikes = NaN(size(chunkLimits,1), 1);
 for ch = 1:size(chunkLimits,1)
     numSpikes(ch) = sum(spikeTimes >= chunkLimits(ch,1) & spikeTimes < chunkLimits(ch,2));
@@ -93,11 +94,13 @@ invalidChunks = unique([invalidChunks; find(chunkLimits(:,1) > chunkCentres(:,2)
     chunkLimits(:,2) < chunkCentres(:,1))]);
 % 5. check whether amplitudes in chunks show too much variability
 ampRanges = NaN(size(chunkLimits,1), 1);
+ampMins = NaN(size(chunkLimits,1), 1);
 for ch = 1:size(chunkLimits,1)
     if ismember(ch, invalidChunks)
         continue
     end
     ind = spikeTimes >= chunkLimits(ch,1) & spikeTimes < chunkLimits(ch,2);
     ampRanges(ch) = range(ampFilt(ind));
+    ampMins(ch) = min(ampFilt(ind));
 end
 invalidChunks = unique([invalidChunks; find(ampRanges > ampThr)]);

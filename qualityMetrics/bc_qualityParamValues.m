@@ -45,8 +45,9 @@ param.chunkCentreSize = 10; % size of non-overlapping windows, to which
                                 % same amplitude cut-off will be applied
 param.minNumSpikesPerChunk = 50; % minimum number spikes per window used to 
                                  % estimate Gaussian
-param.minChunkSize = 20; % minimum length of window used to estimate Gaussian
+param.minChunkSize = 10; % minimum length of window used to estimate Gaussian
 param.maxChunkSize = 60 * 10; % maximum length of window used to estimate Gaussian
+param.minValid = 0.5; % minimum fraction of valid periods per unit
 
 % amplitude parameters
 param.nRawSpikesToExtract = 100; % how many raw spikes to extract for each unit 

@@ -55,6 +55,10 @@ bc_loadMetricsForGUI;
 unitQualityGuiHandle = bc_unitQualityGUI(memMapData, ephysData, qMetric, forGUI, rawWaveforms, ...
     param, probeLocation, unitType, loadRawTraces);
 
+%% Evaluate neurons and spikes based on spike amplitude distribution in moving window
+[badAmpPeriods, lowAmpSpikes, goodAmpUnits] = bc_evaluateSpikeAmpTimecourse(param, ...
+    spikeTimes_samples, spikeTemplates, templateAmplitudes, unitType, ...
+    savePath);
 
 %% example: get the quality metrics for one unit
 % this is an example to get the quality metric for the unit with the
