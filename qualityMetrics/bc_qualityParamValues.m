@@ -40,6 +40,7 @@ end
 param.saveMatFileForGUI = 1; % save certain outputs at .mat file - useful for GUI
 
 % defining time chunks for cutting off low amplitude spikes
+param.lowAmpSpikeThreshold = 20; % in percentage of spikes
 param.maxAmpChange = 3; % threshold (in STDs) of change in spike amplitude across time;
                         % if crossed, separate chunks used to fit Gaussians
 param.chunkCentreSize = 10; % size of non-overlapping windows, to which 
