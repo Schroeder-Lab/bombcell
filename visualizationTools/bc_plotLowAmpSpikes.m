@@ -70,7 +70,11 @@ c.Label.String = 'Fitted frequency';
 title('Fitted Gaussians')
 xlabel('Time (s)')
 ylabel('Amplitude')
-l = legend([h1 h2 h4 h5 h6], 'Gaussian', 'Cut off', 'Median', 'Range', 'Threshold');
+if all(valid)
+    l = legend([h1 h4 h5 h6], 'Gaussian', 'Median', 'Range', 'Threshold');
+else
+    l = legend([h1 h2 h4 h5 h6], 'Gaussian', 'Cut off', 'Median', 'Range', 'Threshold');
+end
 l.Color = 'none';
 l.TextColor = 'w';
 l.Box = 'off';
