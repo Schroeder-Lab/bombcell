@@ -114,6 +114,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
     theseSpikeTimes = spikeTimes_seconds(theseSpikeInds);
     theseAmplis = templateAmplitudes(theseSpikeInds);
 
+    
     %% percentage spikes missing (false negatives)
     [percentageSpikesMissing_gaussian, percentageSpikesMissing_symmetric, ksTest_pValue, ~, ~, ~] = ...
         bc_percSpikesMissing(theseAmplis, theseSpikeTimes, timeChunks, param.plotDetails);
@@ -160,7 +161,7 @@ for iUnit = 1:size(uniqueTemplates, 1)
         forGUI.tempWv(iUnit, :)] = bc_waveformShape(templateWaveforms, thisUnit, qMetric.maxChannels(thisUnit), ...
         param.ephys_sample_rate, channelPositions, param.maxWvBaselineFraction, waveformBaselineWindow, ...
         param.minThreshDetectPeaksTroughs, param.firstPeakRatio, param.plotDetails); %do we need tempWv ?
-
+    
     %% amplitude
     if param.extractRaw
         qMetric.rawAmplitude(iUnit) = bc_getRawAmplitude(rawWaveformsFull(iUnit, rawWaveformsPeakChan(iUnit), :), ...
@@ -173,9 +174,9 @@ for iUnit = 1:size(uniqueTemplates, 1)
     %% distance metrics
     if param.computeDistanceMetrics
         [qMetric.isoD(iUnit), qMetric.Lratio(iUnit), qMetric.silhouetteScore(iUnit), ...
-            forGUI.d2_mahal{iUnit}, forGUI.mahalobnis_Xplot{iUnit}, forGUI.mahalobnis_Yplot{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
+            forGUI.unit_mahal_counts{iUnit}, forGUI.unit_mahal_edges{iUnit}, forGUI.noise_mahal_counts{iUnit}, forGUI.unit_mahal_edges{iUnit}] = bc_getDistanceMetrics(pcFeatures, ...
             pcFeatureIdx, thisUnit, sum(spikeTemplates == thisUnit), spikeTemplates == thisUnit, theseSpikeTemplates, ...
-            param.nChannelsIsoDist, param.plotDetails); %QQ
+            param.nChannelsIsoDist, param.plotDetails); 
     end
 
     %% display progress

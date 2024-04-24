@@ -12,7 +12,6 @@
 % quality metric thresholds depending on the summary plots (histograms 
 % of the distributions of quality metrics for each unit) and GUI. 
 
-
 %% set paths - EDIT THIS FUNCTION
 [ephysKilosortPath, ephysRawDir, ephysMetaDir, saveLocation, savePath, ...
     decompressDataLocal] = bc_definePaths;
@@ -35,7 +34,7 @@ end
 rawFile = bc_manageDataCompression(ephysRawDir, decompressDataLocal);
 
 %% which quality metric parameters to extract and thresholds 
-param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV); %for unitmatch, run this:
+param = bc_qualityParamValues(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV, kilosortVersion); %for unitmatch, run this:
 % param = bc_qualityParamValuesForUnitMatch(ephysMetaDir, rawFile, ephysKilosortPath, gain_to_uV)
 
 %% compute quality metrics 

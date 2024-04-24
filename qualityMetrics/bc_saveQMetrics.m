@@ -24,6 +24,10 @@ if ~istable(param)
     if isempty(param.ephysKilosortPath)
         param.ephysKilosortPath = 'NaN';
     end
+
+    if isempty(param.gain_to_uV)
+        param.gain_to_uV = 'NaN';
+    end
     parquetwrite([fullfile(savePath, '_bc_parameters._bc_qMetrics.parquet')], struct2table(param))
 end
 % save quality metrics
@@ -64,7 +68,7 @@ if isfield(param,'saveAsTSV') % ensure back-compatibility if users have a previo
         'SNR','frac_RPVs' };
     if param.saveAsTSV == 1 
         cluster_id_vector = qMetric.clusterID - 1; % from bombcell to phy nomenclature 
-        if isfield(param,'ephysKilosortPath') && strcmp(param.ephysKilosortPath, 'NaN') == 0
+        if isfield(param,'ephysKilosortPath') && strcmp(param.ephysKilosortPath, 'NaN') && ~isempty(param.ephysKilosortPath) == 0
             saveTSV_path = param.ephysKilosortPath;
         else
             saveTSV_path = savePath;
