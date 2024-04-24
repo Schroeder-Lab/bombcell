@@ -10,7 +10,12 @@
 % pre-extracted waveforms are simply loaded in.
 % We recommend running this pipeline on a few datasets and deciding on
 % quality metric thresholds depending on the summary plots (histograms 
-% of the distributions of quality metrics for each unit) and GUI. 
+% of the distributions of quality metrics for each unit) and GUI.
+
+%% paprameters
+gain_to_uV = 0.195; % use this if you are not using spikeGLX or openEphys to record your data. You then must leave the ephysMetaDir 
+    % empty(e.g. ephysMetaDir = '')
+kilosortVersion = 2;% if using kilosort4, you need to change this value. Otherwise it does not matter. 
 
 %% set paths - EDIT THIS FUNCTION
 [ephysKilosortPath, ephysRawDir, ephysMetaDir, saveLocation, savePath, ...
