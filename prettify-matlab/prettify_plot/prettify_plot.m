@@ -7,22 +7,22 @@ function prettify_plot(varargin)
 %       If a string, either:
 %           - 'keep': don't change any of the xlimits
 %           - 'same': set all xlimits to the same values
-%           - 'row': set all xlimits to the same values for each subplot row
-%           - 'col': set all xlimits to the same values for each subplot col
+%           - 'rows': set all xlimits to the same values for each subplot row
+%           - 'cols': set all xlimits to the same values for each subplot col
 %       If a number, 1 * 2 double setting the minimum and maximum values
 % - YLimits: string or number.
 %       If a string, either:
 %           - 'keep': don't change any of the ylimits
 %           - 'same': set all ylimits to the same values
-%           - 'row': set all ylimits to the same values for each subplot row
-%           - 'col': set all ylimits to the same values for each subplot col
+%           - 'rows': set all ylimits to the same values for each subplot row
+%           - 'cols': set all ylimits to the same values for each subplot col
 %       If a number, 1 * 2 double setting the minimum and maximum values
 % - CLimits, string or number.
 %       If a string, either:
 %           - 'keep': don't change any of the xlimits
 %           - 'same': set all xlimits to the same values
-%           - 'row': set all xlimits to the same values for each subplot row
-%           - 'col': set all xlimits to the same values for each subplot col
+%           - 'rows': set all xlimits to the same values for each subplot row
+%           - 'cols': set all xlimits to the same values for each subplot col
 %       If a number, 1 * 2 double setting the minimum and maximum values
 % - LimitsRound % Number of decimals to keep when rounding. set to NaN if you don't want any changes
 % - SymmetricalCLimits: boolean. Whether to make CLimits symmetrical around 0
@@ -113,7 +113,7 @@ options = struct('XLimits', 'keep', ... % set to 'keep' if you don't want any ch
     'PointSize', 8, ...
     'LineThickness', 2, ...
     'AxisTicks', 'out', ...
-    'TickLength', 0.035, ...
+    'TickLength', [0.0125, 0.031], ...
     'TickWidth', 1.3, ...
     'AxisBox', 'off', ...
     'AxisGrid', 'off', ...
@@ -140,9 +140,6 @@ for iPair = reshape(varargin, 2, []) % pair is {propName;propValue}
     inputName = iPair{1};
 
     if any(strcmp(inputName, optionNames))
-        % overwrite options. If you want you can test for the right class here
-        % Also, if you find out that there is an option you keep getting wrong,
-        % you can use "if strcmp(inpName,'problemOption'),testMore,end"-statements
         options.(inputName) = iPair{2};
     else
         error('%s is not a recognized parameter name', inputName)
@@ -169,6 +166,7 @@ if ~strcmp(options.FigureColor, 'none')
         end
     end
 end
+
 % Get handles for current figure and axis
 currFig = gcf; 
 
@@ -176,7 +174,11 @@ currFig = gcf;
 set(currFig, 'color', options.FigureColor);
 
 % update font
-fontname(options.Font)
+try
+fontname(currFig, options.Font)
+catch
+     % matlab version < 2022 , this function doesn't exist
+end
 
 % get axes children
 currFig_children = currFig.Children;
@@ -226,14 +228,16 @@ for iAx = 1:size(all_axes, 2)
         % Set grid/box/tick options
         set(currAx, 'TickDir', options.AxisTicks)
         set(currAx, 'Box', options.AxisBox)
-        set(currAx, 'TickLength', [options.TickLength, options.TickLength]); % Make tick marks longer.
+        set(currAx, 'TickLength', options.TickLength); % Make tick marks longer.
         set(currAx, 'LineWidth', options.TickWidth); % Make tick marks and axis lines thicker.
 
         %set(currAx, 'Grid', options.AxisGrid)
-        if strcmp(options.AxisAspectRatio, 'keep') == 0
+        if strcmp(options.AxisAspectRatio, 'keep') == 0 && ...
+                ((sum(strcmp(options.XLimits, {'rows', 'cols' 'all'})) == 0 && sum(strcmp(options.YLimits, {'rows', 'cols' 'all'})) == 0) && ~isnumeric(options.XLimits))
             axis(currAx, options.AxisAspectRatio)
         end
-        if strcmp(options.AxisTightness, 'keep') == 0
+        if strcmp(options.AxisTightness, 'keep') == 0 &&...
+                ((sum(strcmp(options.XLimits, {'rows', 'cols' 'all'})) == 0 && sum(strcmp(options.YLimits, {'rows', 'cols' 'all'})) == 0) && ~isnumeric(options.XLimits))
             axis(currAx, options.AxisTightness)
         end
 
@@ -265,8 +269,10 @@ for iAx = 1:size(all_axes, 2)
             % if any lines/points become the same as background, change
             % these.
 
-            if ismember(thisLine.Color, colorsToReplace, 'rows')
-               thisLine.Color = mainColor;
+            if ~strcmp(thisLine.Color, 'none')
+                if ismember(thisLine.Color, colorsToReplace, 'rows') 
+                    thisLine.Color = mainColor;
+                end
             end
             % adjust markersize
             if sum(get(thisLine, 'Marker') == 'none') < 4
@@ -274,9 +280,9 @@ for iAx = 1:size(all_axes, 2)
                 set(thisLine, 'MarkerFaceColor', thisLine.Color);
             end
             % adjust line thickness
-            if strcmp('-', get(thisLine, 'LineStyle'))
+            %if strcmp('-', get(thisLine, 'LineStyle'))
                 set(thisLine, 'LineWidth', options.LineThickness);
-            end
+            %end
         end
 
         % Adjust properties of dots children within the plot
@@ -290,13 +296,14 @@ for iAx = 1:size(all_axes, 2)
                     thisPoint.CData = mainColor;
                 end
             else
-
+            if size(thisPoint.CData,2) == 3
                 if ismember(thisPoint.CData, colorsToReplace, 'rows')
                     points_sub = ismember(thisPoint.CData == [0, 0, 0; 1, 1, 1], 'rows');
                     if any(points_sub)
                         set(thisPoint, 'MarkerEdgeColor', mainColor)
                     end
                 end
+            end
                 
             end
             % adjust markersize

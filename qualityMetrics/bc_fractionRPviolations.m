@@ -78,7 +78,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
         subplot(2, length(timeChunks)-1, (length(timeChunks) - 1)+iTimeChunk)
         theseISI = diff(theseSpikeTimes(theseSpikeTimes >= timeChunks(iTimeChunk) & theseSpikeTimes < timeChunks(iTimeChunk+1)));
         theseisiclean = theseISI(theseISI >= tauC); % removed duplicate spikes
-        [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:50]);
+        [isiProba, edgesISI] = histcounts(theseisiclean*1000, [0:0.5:10]);
         bar(edgesISI(1:end-1)+mean(diff(edgesISI)), isiProba, 'FaceColor', [0, 0.35, 0.71], ...
             'EdgeColor', [0, 0.35, 0.71]); %Check FR
         if iTimeChunk == 1
@@ -109,7 +109,7 @@ for iTimeChunk = 1:length(timeChunks) - 1 %loop through each time chunk
 
         end
 
-        set(gca, 'XScale', 'log')
+        %set(gca, 'XScale', 'log')
     end
 
 end
@@ -127,7 +127,7 @@ if plotThis
     xlabel('time (s)')
     ylabel(['amplitude scaling', newline, 'factor'])
     if exist('prettify_plot', 'file')
-        prettify_plot('FigureColor', 'w', 'TickLength', 0.01)
+        prettify_plot('FigureColor', 'w')
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
         makepretty('none')

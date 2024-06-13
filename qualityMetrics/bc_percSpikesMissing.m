@@ -55,7 +55,7 @@ for iTimeChunk = 1:numel(timeChunks) - 1
         % mirror the unit's amplitudes 
         % median smooth ti get more accurate peak ]
         spikeCountsPerAmpliBin_smooth = smoothdata(spikeCountsPerAmpliBin, 'movmedian', 5);
-        maxAmpli_val_smooth = find(spikeCountsPerAmpliBin_smooth == max(spikeCountsPerAmpliBin_smooth));
+        maxAmpli_val_smooth = find(spikeCountsPerAmpliBin_smooth == max(spikeCountsPerAmpliBin_smooth),1);
        
         surrogate_amplitudes = [spikeCountsPerAmpliBin_smooth(end:-1:maxAmpli_val_smooth), fliplr(spikeCountsPerAmpliBin_smooth(end:-1:maxAmpli_val_smooth+1))];
         surrogate_bins = [fliplr(bins(maxAmpli_val_smooth)-bin_steps:-bin_steps:bins(maxAmpli_val_smooth) - bin_steps*floor(size(surrogate_amplitudes,2)/2)),...
@@ -157,7 +157,7 @@ if plotThis
     xlabel('time (s)')
     ylabel(['amplitude scaling', newline, 'factor'])
     if exist('prettify_plot', 'file')
-        prettify_plot('FigureColor', 'w', 'XLimits', 'keep', 'YLimits', 'keep', 'TickLength', 0.01)
+        prettify_plot('FigureColor', 'w', 'XLimits', 'keep', 'YLimits', 'keep')
     else
         warning('https://github.com/Julie-Fabre/prettify-matlab repo missing - download it and add it to your matlab path to make plots pretty')
         makepretty('none')

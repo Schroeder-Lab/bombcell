@@ -24,7 +24,7 @@ defaultValues.saveSpikes_withoutDuplicates = 1;
 defaultValues.recomputeDuplicateSpikes = 0;
 
 % raw waveforms 
-defaultValues.detrendWaveforms = 0;
+defaultValues.detrendWaveform = 0;
 defaultValues.extractRaw = 1;
 
 % amplitude 
@@ -42,7 +42,9 @@ defaultValues.firstPeakRatio = 0; % if units have an initial peak before the tro
     % it must be at least firstPeakRatio times larger than the peak after
     % the trough to qualify as a non-somatic unit. 0 means this value is
     % not used.
-
+defaultValues.normalizeSpDecay = 0;% whether to normalize spatial decay points relative to 
+% maximum - this makes the spatrial decay slop calculation more invariant to the 
+% spike-sorting algorithm used
 %% Check for missing fields and add them with default value
 [param_complete, missingFields] = bc_addMissingFieldsWithDefault(param, defaultValues);
 
